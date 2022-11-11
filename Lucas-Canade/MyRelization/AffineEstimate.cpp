@@ -108,7 +108,7 @@ std::array<cv::Point2d, 4> affinedRectangle(const AffineEstimator::AffineParamet
 	return result;
 }
 
-void AffineEstimator::debugShow()
+cv::Mat AffineEstimator::debugShow()
 {
 	auto points = affinedRectangle(affine_, cv::Rect2d(0, 0, tx_.cols, tx_.rows));
 
@@ -123,12 +123,12 @@ void AffineEstimator::debugShow()
 	// the orginal region
 	cv::rectangle(imshow, cv::Rect(32, 52, 100, 100), cv::Scalar(0, 255, 0));
 
-	cv::namedWindow("debug show", cv::WINDOW_NORMAL);
-	cv::imshow("debug show", imshow);
+	return imshow;
 }
 
 // the entry of main function
-void AffineEstimator::compute(const cv::Mat& source_image, const cv::Mat& template_image, const AffineParameter& affine_init, const Method& method)
+void AffineEstimator::compute(const cv::Mat& source_image, const cv::Mat& template_image,
+	const AffineParameter& affine_init, const Method& method)
 {
 
 	// copy(deep) the affine matrix to another memory
@@ -148,15 +148,15 @@ void AffineEstimator::compute(const cv::Mat& source_image, const cv::Mat& templa
 		break;
 
 	case Method::kForwardCompositional:
-		//computeFC();
+		computeFC();
 		break;
 
 	case Method::kBackwardAdditive:
-		//computeBA();
+		computeBA();
 		break;
 
 	case Method::kBackwardCompositional:
-		//computeBC();
+		computeBC();
 		break;
 
 	default:
@@ -168,24 +168,40 @@ void AffineEstimator::compute(const cv::Mat& source_image, const cv::Mat& templa
 void AffineEstimator::computeFA()
 {
 	// affine matrix
+	// the p is the reference of affine_.data
+	// so that the cv::Mat maybe a pointer to the data's first address
 	cv::Mat p = cv::Mat(6, 1, CV_64FC1, affine_.data);
 
-	// compute the gradient
+	// compute the gradient of source image
 	cv::Mat gx, gy;
 	image_processor_->getGradient(gx, gy);
+
+	if (debug_show_)
+	{
+		cv::Mat initImage = debugShow();
+		cv::namedWindow("initImage", cv::WINDOW_NORMAL);
+		cv::imshow("initImage", initImage);
+	}
 
 	int i = 0;
 	for (; i < max_iter_; ++i)
 	{
 
+		std::string flex = ".png";
 		if (debug_show_)
-			debugShow();
+		{
+			cv::Mat imshow = debugShow();
+			cv::namedWindow("imshow", cv::WINDOW_NORMAL);
+			cv::imshow("imshow", imshow);
+			/*std::string save_path = std::to_string(i) + flex;
+			cv::imwrite(save_path, imshow);*/
+		}
 
 		cv::Mat hessian = cv::Mat::zeros(6, 6, CV_64FC1);
 		cv::Mat residual = cv::Mat::zeros(6, 1, CV_64FC1);
 
 		double cost = 0.;
-
+		// Traverse the pixels in template image
 		for (int y = 0; y < tx_.rows; y++)
 		{
 			for (int x = 0; x < tx_.cols; x++)
@@ -199,7 +215,7 @@ void AffineEstimator::computeFA()
 
 				double i_warped = image_processor_->getBilinearInterpolation(wx, wy);
 
-				// the arr of value of pixel
+				// the err of value of pixel
 				double err = i_warped - tx_.at<double>(y, x);
 
 				double gx_warped = image_processor_->getBilinearInterpolation(gx, wx, wy);
@@ -220,12 +236,372 @@ void AffineEstimator::computeFA()
 		cv::Mat hessianTmp;
 		cv::invert(hessian, hessianTmp, cv::DECOMP_CHOLESKY);
 		cv::Mat delta_p = hessianTmp * residual;
+
+		// this code influences the affine_
 		p += delta_p;
 
-		std::cout << "Iteration " << i << " cost = " << cost << " squared delta p L2 norm = " << cv::norm(delta_p, cv::NORM_L2) << std::endl;
+		std::cout << "Iteration " << i << " cost = " << cost
+			<< " squared delta p L2 norm = " << cv::norm(delta_p, cv::NORM_L2) << std::endl;
 
 		if (cv::norm(delta_p, cv::NORM_L2) < 1e-12)
 			break;
+
+		std::cout << "After " << i + 1 << " iteration, the final estimate affine matrix is: \n"
+			<< affine_.p1 + 1 << " " << affine_.p3 << " " << affine_.p5 << " \n"
+			<< affine_.p2 << " " << affine_.p4 + 1 << " " << affine_.p6 << std::endl;
+	}
+
+	std::cout << "After " << i + 1 << " iteration, the final estimate affine matrix is: \n"
+		<< affine_.p1 + 1 << " " << affine_.p3 << " " << affine_.p5 << " \n"
+		<< affine_.p2 << " " << affine_.p4 + 1 << " " << affine_.p6 << std::endl;
+}
+
+void AffineEstimator::computeFC()
+{
+	// affine matrix
+	cv::Mat p = cv::Mat(6, 1, CV_64FC1, affine_.data);
+
+	if (debug_show_)
+	{
+		cv::Mat initImage = debugShow();
+		cv::namedWindow("initImage", cv::WINDOW_NORMAL);
+		cv::imshow("initImage", initImage);
+	}
+
+	int i = 0;
+	for (; i < max_iter_; ++i)
+	{
+		std::string flex = ".png";
+		if (debug_show_)
+		{
+			cv::Mat imshow = debugShow();
+			cv::namedWindow("imshow", cv::WINDOW_NORMAL);
+			cv::imshow("imshow", imshow);
+			/*std::string save_path = std::to_string(i) + flex;
+			cv::imwrite(save_path, imshow);*/
+		}
+
+		std::cout << "******************************" << std::endl;
+		cv::Mat hessian = cv::Mat::zeros(6, 6, CV_64FC1);
+		cv::Mat residual = cv::Mat::zeros(6, 1, CV_64FC1);
+
+		double cost = 0.;
+		cv::Mat warped_i(tx_.size(), CV_64FC1);
+		for (int y = 0; y < tx_.rows; y++)
+		{
+			for (int x = 0; x < tx_.cols; x++)
+			{
+
+				double wx = (double)x * (1. + affine_.p1) + (double)y * affine_.p3 + affine_.p5;
+				double wy = (double)x * affine_.p2 + (double)y * (1. + affine_.p4) + affine_.p6;
+
+				if (wx < 1 || wx > image_processor_->width() - 2 || wy < 1 || wy > image_processor_->height() - 2)
+				{
+					warped_i.at<double>(y, x) = 0;
+					continue;
+				}
+
+				warped_i.at<double>(y, x) = image_processor_->getBilinearInterpolation(wx, wy);
+			}
+		}
+
+		// compute the gradient of warped image which is the restore of affined image
+		ImageProcessor temp_proc;
+		temp_proc.setInput(warped_i);
+
+		cv::Mat warped_gx, warped_gy;
+		temp_proc.getGradient(warped_gx, warped_gy);
+
+		for (int y = 0; y < tx_.rows; y++)
+		{
+			for (int x = 0; x < tx_.cols; x++)
+			{
+				double err = warped_i.at<double>(y, x) - tx_.at<double>(y, x);
+
+				double gx_warped = warped_gx.at<double>(y, x);
+				double gy_warped = warped_gy.at<double>(y, x);
+
+				cv::Mat jacobian = (cv::Mat_<double>(1, 6) << x * gx_warped, x * gy_warped,
+					y * gx_warped, y * gy_warped, gx_warped, gy_warped);
+
+				cv::Mat jacobianTmp;
+				cv::transpose(jacobian, jacobianTmp);
+				hessian += jacobianTmp * jacobian;
+				residual -= jacobianTmp * err;
+
+				cost += err * err;
+			}
+		}
+
+		double delta_p_data[6] = { 0. };
+		cv::Mat hessianTmp = cv::Mat(6, 1, CV_64FC1, delta_p_data);
+		cv::invert(hessian, hessianTmp, cv::DECOMP_CHOLESKY);
+		cv::Mat delta_p = hessianTmp * residual;
+
+		double inc[6] = { 0. };
+		memcpy(inc, delta_p.data, sizeof(double) * 6);
+		inc[0] += (affine_.p1 * delta_p.at<double>(0, 0) + affine_.p3 * delta_p.at<double>(1, 0));
+		inc[1] += (affine_.p2 * delta_p.at<double>(0, 0) + affine_.p4 * delta_p.at<double>(1, 0));
+		inc[2] += (affine_.p1 * delta_p.at<double>(2, 0) + affine_.p3 * delta_p.at<double>(3, 0));
+		inc[3] += (affine_.p2 * delta_p.at<double>(2, 0) + affine_.p4 * delta_p.at<double>(3, 0));
+		inc[4] += (affine_.p1 * delta_p.at<double>(4, 0) + affine_.p3 * delta_p.at<double>(5, 0));
+		inc[5] += (affine_.p2 * delta_p.at<double>(4, 0) + affine_.p4 * delta_p.at<double>(5, 0));
+
+		cv::Mat increment = cv::Mat(6, 1, CV_64FC1, inc);
+		p += increment;
+
+		std::cout << "Iteration " << i << " cost = " << cost
+			<< " squared delta p L2 norm = " << cv::norm(delta_p, cv::NORM_L2) << std::endl;
+
+		if (cv::norm(delta_p, cv::NORM_L2) < 1e-12)
+			break;
+
+		std::cout << "After " << i + 1 << " iteration, the final estimate affine matrix is: \n"
+			<< affine_.p1 + 1 << " " << affine_.p3 << " " << affine_.p5 << " \n"
+			<< affine_.p2 << " " << affine_.p4 + 1 << " " << affine_.p6 << std::endl;
+	}
+
+	std::cout << "After " << i + 1 << " iteration, the final estimate affine matrix is: \n"
+		<< affine_.p1 + 1 << " " << affine_.p3 << " " << affine_.p5 << " \n"
+		<< affine_.p2 << " " << affine_.p4 + 1 << " " << affine_.p6 << std::endl;
+}
+
+void AffineEstimator::computeBA()
+{
+	// affine matrix
+	cv::Mat p = cv::Mat(6, 1, CV_64FC1, affine_.data);
+
+	if (debug_show_)
+	{
+		cv::Mat initImage = debugShow();
+		cv::namedWindow("initImage", cv::WINDOW_NORMAL);
+		cv::imshow("initImage", initImage);
+	}
+
+	ImageProcessor temp_proc;
+	temp_proc.setInput(tx_);
+
+	// Pre-compute
+	cv::Mat gx, gy;
+	temp_proc.getGradient(gx, gy);
+
+	cv::Mat xgx(gx.size(), gx.type());
+	cv::Mat xgy(gx.size(), gx.type());
+	cv::Mat ygx(gx.size(), gx.type());
+	cv::Mat ygy(gx.size(), gx.type());
+
+	std::cout << "******************************" << std::endl;
+	cv::Mat hessian_star = cv::Mat::zeros(6, 6, CV_64FC1);
+
+	for (int y = 0; y < tx_.rows; y++)
+	{
+		for (int x = 0; x < tx_.cols; x++)
+		{
+			xgx.at<double>(y, x) = x * gx.at<double>(y, x);
+			xgy.at<double>(y, x) = x * gy.at<double>(y, x);
+			ygx.at<double>(y, x) = y * gx.at<double>(y, x);
+			ygy.at<double>(y, x) = y * gy.at<double>(y, x);
+
+			cv::Mat jacobian = (cv::Mat_<double>(1, 6) << xgx.at<double>(y, x), xgy.at<double>(y, x),
+				ygx.at<double>(y, x), ygy.at<double>(y, x), gx.at<double>(y, x), gy.at<double>(y, x));
+
+			cv::Mat jacobianTmp;
+			cv::transpose(jacobian, jacobianTmp);
+			hessian_star += jacobianTmp * jacobian;
+		}
+	}
+
+	cv::Mat hessian_star_inverse = cv::Mat(6, 6, CV_64FC1);
+	cv::invert(hessian_star, hessian_star_inverse, cv::DECOMP_CHOLESKY);
+
+	int i = 0;
+	for (; i < max_iter_; ++i)
+	{
+		std::string flex = ".png";
+		if (debug_show_)
+		{
+			cv::Mat imshow = debugShow();
+			cv::namedWindow("imshow", cv::WINDOW_NORMAL);
+			cv::imshow("imshow", imshow);
+			/*std::string save_path = std::to_string(i) + flex;
+			cv::imwrite(save_path, imshow);*/
+		}
+
+		cv::Mat residual = cv::Mat::zeros(6, 1, CV_64FC1);
+
+		double cost = 0.;
+		for (int y = 0; y < tx_.rows; y++)
+		{
+			for (int x = 0; x < tx_.cols; x++)
+			{
+
+				double wx = (double)x * (1. + affine_.p1) + (double)y * affine_.p3 + affine_.p5;
+				double wy = (double)x * affine_.p2 + (double)y * (1. + affine_.p4) + affine_.p6;
+
+				if (wx < 1 || wx > image_processor_->width() - 2 || wy < 1 || wy > image_processor_->height() - 2)
+					continue;
+
+				double err = tx_.at<double>(y, x) - image_processor_->getBilinearInterpolation(wx, wy);
+
+				cv::Mat jacobian = (cv::Mat_<double>(1, 6) << xgx.at<double>(y, x), xgy.at<double>(y, x),
+					ygx.at<double>(y, x), ygy.at<double>(y, x), gx.at<double>(y, x), gy.at<double>(y, x));
+
+				cv::Mat jacobian_transpose;
+				cv::transpose(jacobian, jacobian_transpose);
+				residual -= jacobian_transpose * err;
+				cost += err * err;
+			}
+		}
+
+		cv::Mat sigma = cv::Mat::zeros(6, 6, CV_64FC1);
+
+		sigma.at<double>(0, 0) = 1 + affine_.p1;
+		sigma.at<double>(0, 1) = affine_.p3;
+		sigma.at<double>(1, 0) = affine_.p2;
+		sigma.at<double>(1, 1) = 1 + affine_.p4;
+
+		sigma.at<double>(2, 2) = 1 + affine_.p1;
+		sigma.at<double>(2, 3) = affine_.p3;
+		sigma.at<double>(3, 2) = affine_.p2;
+		sigma.at<double>(3, 3) = 1 + affine_.p4;
+
+		sigma.at<double>(4, 4) = 1 + affine_.p1;
+		sigma.at<double>(4, 5) = affine_.p3;
+		sigma.at<double>(5, 4) = affine_.p2;
+		sigma.at<double>(5, 5) = 1 + affine_.p4;
+
+		cv::Mat delta_p = sigma * hessian_star_inverse * residual;
+
+		p -= delta_p;
+
+		std::cout << "Iteration " << i << " cost = " << cost <<
+			" squared delta p L2 norm = " << cv::norm(delta_p, cv::NORM_L2) << std::endl;
+
+		if (cv::norm(delta_p, cv::NORM_L2) < 1e-12)
+			break;
+
+		std::cout << "After " << i + 1 << " iteration, the final estimate affine matrix is: \n"
+			<< affine_.p1 + 1 << " " << affine_.p3 << " " << affine_.p5 << " \n"
+			<< affine_.p2 << " " << affine_.p4 + 1 << " " << affine_.p6 << std::endl;
+	}
+
+	std::cout << "After " << i + 1 << " iteration, the final estimate affine matrix is: \n"
+		<< affine_.p1 + 1 << " " << affine_.p3 << " " << affine_.p5 << " \n"
+		<< affine_.p2 << " " << affine_.p4 + 1 << " " << affine_.p6 << std::endl;
+}
+
+void AffineEstimator::computeBC()
+{
+	if (debug_show_)
+	{
+		cv::Mat initImage = debugShow();
+		cv::namedWindow("initImage", cv::WINDOW_NORMAL);
+		cv::imshow("initImage", initImage);
+	}
+
+	ImageProcessor temp_proc;
+	temp_proc.setInput(tx_);
+
+	// Pre-compute
+	cv::Mat gx, gy;
+	temp_proc.getGradient(gx, gy);
+
+	cv::Mat xgx(gx.size(), gx.type());
+	cv::Mat xgy(gx.size(), gx.type());
+	cv::Mat ygx(gx.size(), gx.type());
+	cv::Mat ygy(gx.size(), gx.type());
+
+	cv::Mat hessian = cv::Mat::zeros(6, 6, CV_64FC1);
+
+	for (int y = 0; y < tx_.rows; y++)
+	{
+		for (int x = 0; x < tx_.cols; x++)
+		{
+			xgx.at<double>(y, x) = x * gx.at<double>(y, x);
+			xgy.at<double>(y, x) = x * gy.at<double>(y, x);
+			ygx.at<double>(y, x) = y * gx.at<double>(y, x);
+			ygy.at<double>(y, x) = y * gy.at<double>(y, x);
+
+
+			cv::Mat jacobian = (cv::Mat_<double>(1, 6) << xgx.at<double>(y, x), xgy.at<double>(y, x),
+				ygx.at<double>(y, x), ygy.at<double>(y, x), gx.at<double>(y, x), gy.at<double>(y, x));
+
+			cv::Mat jacobian_transpose;
+			cv::transpose(jacobian, jacobian_transpose);
+			hessian += jacobian_transpose * jacobian;
+		}
+	}
+
+	cv::Mat hessian_inverse = cv::Mat(6, 6, CV_64FC1);
+	cv::invert(hessian, hessian_inverse, cv::DECOMP_CHOLESKY);
+
+	int i = 0;
+	for (; i < max_iter_; ++i)
+	{
+		std::string flex = ".png";
+		if (debug_show_)
+		{
+			cv::Mat imshow = debugShow();
+			cv::namedWindow("imshow", cv::WINDOW_NORMAL);
+			cv::imshow("imshow", imshow);
+			/*std::string save_path = std::to_string(i) + flex;
+			cv::imwrite(save_path, imshow);*/
+		}
+
+		cv::Mat residual = cv::Mat::zeros(6, 1, CV_64FC1);
+
+		double cost = 0.;
+
+		for (int y = 0; y < tx_.rows; y++)
+		{
+			for (int x = 0; x < tx_.cols; x++)
+			{
+
+				double wx = (double)x * (1. + affine_.p1) + (double)y * affine_.p3 + affine_.p5;
+				double wy = (double)x * affine_.p2 + (double)y * (1. + affine_.p4) + affine_.p6;
+
+				if (wx < 1 || wx > image_processor_->width() - 2 || wy < 1 || wy > image_processor_->height() - 2)
+					continue;
+
+				double err = tx_.at<double>(y, x) - image_processor_->getBilinearInterpolation(wx, wy);
+
+				cv::Mat jacobian = (cv::Mat_<double>(1, 6) << xgx.at<double>(y, x), xgy.at<double>(y, x),
+					ygx.at<double>(y, x), ygy.at<double>(y, x), gx.at<double>(y, x), gy.at<double>(y, x));
+
+				cv::Mat jacobian_transpose;
+				cv::transpose(jacobian, jacobian_transpose);
+				residual -= jacobian_transpose * err;
+				cost += err * err;
+			}
+		}
+
+		cv::Mat delta_p = hessian_inverse * residual;
+
+		cv::Mat delta_m = (cv::Mat_<double>(3, 3) << 1 + affine_.p1, affine_.p3, affine_.p5,
+			affine_.p2, 1 + affine_.p4, affine_.p6, 0, 0, 1);
+		cv::Mat	warp_m = (cv::Mat_<double>(3, 3) << 1 + delta_p.at<double>(0, 0), delta_p.at<double>(2, 0), delta_p.at<double>(4, 0),
+			delta_p.at<double>(1, 0), 1 + delta_p.at<double>(3, 0), delta_p.at<double>(5, 0), 0, 0, 1);
+
+		cv::Mat delta_m_inverse = cv::Mat(3, 3, CV_64FC1);
+		cv::invert(delta_m, delta_m_inverse, cv::DECOMP_CHOLESKY);
+
+		cv::Mat new_warp = warp_m * delta_m_inverse;
+		affine_.p1 = new_warp.at<double>(0, 0) - 1.;
+		affine_.p2 = new_warp.at<double>(1, 0);
+		affine_.p3 = new_warp.at<double>(0, 1);
+		affine_.p4 = new_warp.at<double>(1, 1) - 1.;
+		affine_.p5 = new_warp.at<double>(0, 2);
+		affine_.p6 = new_warp.at<double>(1, 2);
+
+		std::cout << "Iteration " << i << " cost = " << cost
+			<< " squared delta p L2 norm = " << cv::norm(delta_p, cv::NORM_L2) << std::endl;
+
+		if (cv::norm(delta_p, cv::NORM_L2) < 1e-12)
+			break;
+
+		std::cout << "After " << i + 1 << " iteration, the final estimate affine matrix is: \n"
+			<< affine_.p1 + 1 << " " << affine_.p3 << " " << affine_.p5 << " \n"
+			<< affine_.p2 << " " << affine_.p4 + 1 << " " << affine_.p6 << std::endl;
 	}
 
 	std::cout << "After " << i + 1 << " iteration, the final estimate affine matrix is: \n"

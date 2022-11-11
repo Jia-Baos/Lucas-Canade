@@ -21,6 +21,15 @@
     <ClCompile Include="MyRelization\源.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\affine_estimate.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\image_process.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\源.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyRelization\AffineEstimate.h">
@@ -29,5 +38,247 @@
     <ClInclude Include="MyRelization\Common.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="src\affine_estimate.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\common.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\image_process.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="0.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="1.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="2.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="3.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="4.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="5.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="6.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="7.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="8.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="9.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="10.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="11.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="12.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="13.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="14.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="15.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="16.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="17.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="18.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="19.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="20.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="21.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="22.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="23.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="24.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="25.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="26.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="27.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="28.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="29.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="30.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="31.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="32.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="33.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="34.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="35.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="36.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="37.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="38.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="39.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="40.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="41.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="42.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="43.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="44.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="45.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="46.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="47.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="48.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="49.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="50.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="51.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="52.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="53.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="54.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="55.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="56.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="57.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="58.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="59.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="60.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="61.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="62.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="63.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="64.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="65.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="66.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="67.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="68.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="69.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="70.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="71.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="72.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="73.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="74.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="75.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="76.png">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>

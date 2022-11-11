@@ -16,6 +16,7 @@ public:
 	ImageProcessor();
 	~ImageProcessor() = default;
 
+	// All the member function is made on image_
 	bool setInput(const cv::Mat& image);
 
 	// the const means this function will not change the Member variables
@@ -58,13 +59,15 @@ public:
 
 private:
 
+	// this method requries the affined region more like orginal region
+	// and the former is affined through the latter
 	void computeFA();
-	/*void computeFC();
+	void computeFC();
 	void computeBA();
-	void computeBC();*/
+	void computeBC();
 
 	// only for debug show
-	void debugShow();
+	cv::Mat debugShow();
 
 	ImageProcessor* image_processor_;
 
@@ -72,6 +75,8 @@ private:
 
 	// tx_ is the copy of tempate_image with type is CV_64FC1
 	cv::Mat tx_;
+
+	// imshow_ is the copy of source image
 	cv::Mat imshow_;
 
 	// store the affine matrix

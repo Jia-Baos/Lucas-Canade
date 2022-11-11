@@ -25,14 +25,12 @@ int main(int argc, char** argv)
 
     AffineEstimator::AffineParameter affine_param;
 
-    std::cout << "hello world" << std::endl;
-
-    // affine_param.p1 = 0.05;
-    // affine_param.p2 = 0.1;
-    // affine_param.p3 = 0.1;
-    // affine_param.p4 = 0.1;
-    // affine_param.p5 = 20;
-    // affine_param.p6 = 30;
+    /*affine_param.p1 = 0.05;
+    affine_param.p2 = 0.1;
+    affine_param.p3 = 0.1;
+    affine_param.p4 = 0.1;
+    affine_param.p5 = 20;
+    affine_param.p6 = 30;*/
 
     affine_param.p1 = 0.1;
     affine_param.p2 = 0;
@@ -42,7 +40,30 @@ int main(int argc, char** argv)
     affine_param.p6 = 50;
 
     AffineEstimator estimator;
-    estimator.compute(image, template_image, affine_param, Method::kForwardAdditive);
+    estimator.compute(image, template_image, affine_param, Method::kBackwardCompositional);
 
+    /*double array[6] = { 1,2,3,4,5,6 };
+    double* pointer = array;
+
+    cv::Mat test = cv::Mat(6, 1, CV_64FC1, pointer);
+
+    std::cout << pointer << std::endl;
+    std::cout << pointer + 1 << std::endl;
+    std::cout << pointer + 2 << std::endl;
+
+
+    for (int i = 0; i < test.rows; i++)
+    {
+        test.at<double>(i, 0) = i * i;
+    }
+
+    for (int i = 0; i < test.rows; i++)
+    {
+        std::cout << array[i] << std::endl;
+    }*/
+
+
+
+    cv::waitKey();
     return 0;
 }
