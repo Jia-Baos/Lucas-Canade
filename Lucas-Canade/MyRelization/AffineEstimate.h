@@ -42,6 +42,8 @@ private:
 class AffineEstimator {
 
 public:
+
+	// the data[] and struct will share the same memory
 	union AffineParameter
 	{
 		double data[6];
@@ -55,7 +57,7 @@ public:
 
 	// align a template image to source image using an affine transformation.
 	void compute(const cv::Mat& source_image, const cv::Mat& template_image,
-		const AffineParameter& affine_init, const Method& method = Method::kForwardAdditive);
+		const AffineParameter& affine_init, const Method& method = Method::kForwardCompositional);
 
 private:
 

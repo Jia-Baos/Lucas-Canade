@@ -19,14 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MyRelization\AffineEstimate.cpp" />
-    <ClCompile Include="MyRelization\源.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="MyRelization\AffineEstimate.h" />
-    <ClInclude Include="MyRelization\Common.h" />
-  </ItemGroup>
-  <ItemGroup>
     <Image Include="0.png" />
     <Image Include="1.png" />
     <Image Include="10.png" />
@@ -104,6 +96,14 @@
     <Image Include="76.png" />
     <Image Include="8.png" />
     <Image Include="9.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MyRelization\AffineEstimate.cpp" />
+    <ClCompile Include="MyRelization\源.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MyRelization\AffineEstimate.h" />
+    <ClInclude Include="MyRelization\Common.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

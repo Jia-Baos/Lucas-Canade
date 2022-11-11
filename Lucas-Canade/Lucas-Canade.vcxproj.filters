@@ -15,22 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MyRelization\AffineEstimate.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="MyRelization\源.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="MyRelization\AffineEstimate.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="MyRelization\Common.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
     <Image Include="0.png">
       <Filter>资源文件</Filter>
     </Image>
@@ -262,5 +246,21 @@
     <Image Include="76.png">
       <Filter>资源文件</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MyRelization\AffineEstimate.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="MyRelization\源.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MyRelization\AffineEstimate.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MyRelization\Common.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

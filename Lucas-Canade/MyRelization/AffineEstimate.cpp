@@ -216,7 +216,7 @@ void AffineEstimator::computeFA()
 				double i_warped = image_processor_->getBilinearInterpolation(wx, wy);
 
 				// the err of value of pixel
-				double err = i_warped - tx_.at<double>(y, x);
+				double err = tx_.at<double>(y, x) - i_warped;
 
 				double gx_warped = image_processor_->getBilinearInterpolation(gx, wx, wy);
 				double gy_warped = image_processor_->getBilinearInterpolation(gy, wx, wy);
@@ -227,7 +227,7 @@ void AffineEstimator::computeFA()
 				cv::Mat jacobian_transpose;
 				cv::transpose(jacobian, jacobian_transpose);
 				hessian += jacobian_transpose * jacobian;
-				residual -= jacobian_transpose * err;
+				residual += jacobian_transpose * err;
 
 				cost += err * err;
 			}
@@ -301,14 +301,15 @@ void AffineEstimator::computeFC()
 					continue;
 				}
 
+				// remap the value of pixel in affied in image to original image
 				warped_i.at<double>(y, x) = image_processor_->getBilinearInterpolation(wx, wy);
 			}
 		}
 
-		// compute the gradient of warped image which is the restore of affined image
 		ImageProcessor temp_proc;
 		temp_proc.setInput(warped_i);
 
+		// compute the gradient of pixels which affined to original image
 		cv::Mat warped_gx, warped_gy;
 		temp_proc.getGradient(warped_gx, warped_gy);
 
@@ -316,7 +317,7 @@ void AffineEstimator::computeFC()
 		{
 			for (int x = 0; x < tx_.cols; x++)
 			{
-				double err = warped_i.at<double>(y, x) - tx_.at<double>(y, x);
+				double err = tx_.at<double>(y, x) - warped_i.at<double>(y, x);
 
 				double gx_warped = warped_gx.at<double>(y, x);
 				double gy_warped = warped_gy.at<double>(y, x);
@@ -327,14 +328,13 @@ void AffineEstimator::computeFC()
 				cv::Mat jacobian_transpose;
 				cv::transpose(jacobian, jacobian_transpose);
 				hessian += jacobian_transpose * jacobian;
-				residual -= jacobian_transpose * err;
+				residual += jacobian_transpose * err;
 
 				cost += err * err;
 			}
 		}
 
-		double delta_p_data[6] = { 0. };
-		cv::Mat hessian_inverse = cv::Mat(6, 1, CV_64FC1, delta_p_data);
+		cv::Mat hessian_inverse = cv::Mat::zeros(6, 1, CV_64FC1);
 		cv::invert(hessian, hessian_inverse, cv::DECOMP_CHOLESKY);
 		cv::Mat delta_p = hessian_inverse * residual;
 
@@ -441,14 +441,14 @@ void AffineEstimator::computeBA()
 				if (wx < 1 || wx > image_processor_->width() - 2 || wy < 1 || wy > image_processor_->height() - 2)
 					continue;
 
-				double err = tx_.at<double>(y, x) - image_processor_->getBilinearInterpolation(wx, wy);
+				double err = image_processor_->getBilinearInterpolation(wx, wy) - tx_.at<double>(y, x);
 
 				cv::Mat jacobian = (cv::Mat_<double>(1, 6) << xgx.at<double>(y, x), xgy.at<double>(y, x),
 					ygx.at<double>(y, x), ygy.at<double>(y, x), gx.at<double>(y, x), gy.at<double>(y, x));
 
 				cv::Mat jacobian_transpose;
 				cv::transpose(jacobian, jacobian_transpose);
-				residual -= jacobian_transpose * err;
+				residual += jacobian_transpose * err;
 				cost += err * err;
 			}
 		}
@@ -472,7 +472,7 @@ void AffineEstimator::computeBA()
 
 		cv::Mat delta_p = sigma * hessian_star_inverse * residual;
 
-		p -= delta_p;
+		p += delta_p;
 
 		std::cout << "Iteration " << i << " cost = " << cost <<
 			" squared delta p L2 norm = " << cv::norm(delta_p, cv::NORM_L2) << std::endl;
@@ -551,7 +551,6 @@ void AffineEstimator::computeBC()
 		cv::Mat residual = cv::Mat::zeros(6, 1, CV_64FC1);
 
 		double cost = 0.;
-
 		for (int y = 0; y < tx_.rows; y++)
 		{
 			for (int x = 0; x < tx_.cols; x++)
@@ -563,23 +562,23 @@ void AffineEstimator::computeBC()
 				if (wx < 1 || wx > image_processor_->width() - 2 || wy < 1 || wy > image_processor_->height() - 2)
 					continue;
 
-				double err = tx_.at<double>(y, x) - image_processor_->getBilinearInterpolation(wx, wy);
+				double err = image_processor_->getBilinearInterpolation(wx, wy) - tx_.at<double>(y, x);
 
 				cv::Mat jacobian = (cv::Mat_<double>(1, 6) << xgx.at<double>(y, x), xgy.at<double>(y, x),
 					ygx.at<double>(y, x), ygy.at<double>(y, x), gx.at<double>(y, x), gy.at<double>(y, x));
 
 				cv::Mat jacobian_transpose;
 				cv::transpose(jacobian, jacobian_transpose);
-				residual -= jacobian_transpose * err;
+				residual += jacobian_transpose * err;
 				cost += err * err;
 			}
 		}
 
 		cv::Mat delta_p = hessian_inverse * residual;
 
-		cv::Mat delta_m = (cv::Mat_<double>(3, 3) << 1 + affine_.p1, affine_.p3, affine_.p5,
+		cv::Mat warp_m = (cv::Mat_<double>(3, 3) << 1 + affine_.p1, affine_.p3, affine_.p5,
 			affine_.p2, 1 + affine_.p4, affine_.p6, 0, 0, 1);
-		cv::Mat	warp_m = (cv::Mat_<double>(3, 3) << 1 + delta_p.at<double>(0, 0), delta_p.at<double>(2, 0), delta_p.at<double>(4, 0),
+		cv::Mat	delta_m = (cv::Mat_<double>(3, 3) << 1 + delta_p.at<double>(0, 0), delta_p.at<double>(2, 0), delta_p.at<double>(4, 0),
 			delta_p.at<double>(1, 0), 1 + delta_p.at<double>(3, 0), delta_p.at<double>(5, 0), 0, 0, 1);
 
 		cv::Mat delta_m_inverse = cv::Mat(3, 3, CV_64FC1);
