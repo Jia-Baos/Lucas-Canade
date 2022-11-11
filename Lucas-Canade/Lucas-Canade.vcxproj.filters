@@ -21,30 +21,12 @@
     <ClCompile Include="MyRelization\源.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\affine_estimate.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\image_process.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="src\源.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyRelization\AffineEstimate.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="MyRelization\Common.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="src\affine_estimate.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="src\common.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="src\image_process.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

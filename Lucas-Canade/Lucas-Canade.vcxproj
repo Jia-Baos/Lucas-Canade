@@ -21,16 +21,10 @@
   <ItemGroup>
     <ClCompile Include="MyRelization\AffineEstimate.cpp" />
     <ClCompile Include="MyRelization\源.cpp" />
-    <ClCompile Include="src\affine_estimate.cpp" />
-    <ClCompile Include="src\image_process.cpp" />
-    <ClCompile Include="src\源.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyRelization\AffineEstimate.h" />
     <ClInclude Include="MyRelization\Common.h" />
-    <ClInclude Include="src\affine_estimate.h" />
-    <ClInclude Include="src\common.h" />
-    <ClInclude Include="src\image_process.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="0.png" />

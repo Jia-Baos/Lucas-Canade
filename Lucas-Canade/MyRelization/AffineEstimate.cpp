@@ -224,18 +224,18 @@ void AffineEstimator::computeFA()
 				cv::Mat jacobian = (cv::Mat_<double>(1, 6) << x * gx_warped, x * gy_warped,
 					y * gx_warped, y * gy_warped, gx_warped, gy_warped);
 
-				cv::Mat jacobianTmp;
-				cv::transpose(jacobian, jacobianTmp);
-				hessian += jacobianTmp * jacobian;
-				residual -= jacobianTmp * err;
+				cv::Mat jacobian_transpose;
+				cv::transpose(jacobian, jacobian_transpose);
+				hessian += jacobian_transpose * jacobian;
+				residual -= jacobian_transpose * err;
 
 				cost += err * err;
 			}
 		}
 
-		cv::Mat hessianTmp;
-		cv::invert(hessian, hessianTmp, cv::DECOMP_CHOLESKY);
-		cv::Mat delta_p = hessianTmp * residual;
+		cv::Mat hessian_inverse;
+		cv::invert(hessian, hessian_inverse, cv::DECOMP_CHOLESKY);
+		cv::Mat delta_p = hessian_inverse * residual;
 
 		// this code influences the affine_
 		p += delta_p;
@@ -324,19 +324,19 @@ void AffineEstimator::computeFC()
 				cv::Mat jacobian = (cv::Mat_<double>(1, 6) << x * gx_warped, x * gy_warped,
 					y * gx_warped, y * gy_warped, gx_warped, gy_warped);
 
-				cv::Mat jacobianTmp;
-				cv::transpose(jacobian, jacobianTmp);
-				hessian += jacobianTmp * jacobian;
-				residual -= jacobianTmp * err;
+				cv::Mat jacobian_transpose;
+				cv::transpose(jacobian, jacobian_transpose);
+				hessian += jacobian_transpose * jacobian;
+				residual -= jacobian_transpose * err;
 
 				cost += err * err;
 			}
 		}
 
 		double delta_p_data[6] = { 0. };
-		cv::Mat hessianTmp = cv::Mat(6, 1, CV_64FC1, delta_p_data);
-		cv::invert(hessian, hessianTmp, cv::DECOMP_CHOLESKY);
-		cv::Mat delta_p = hessianTmp * residual;
+		cv::Mat hessian_inverse = cv::Mat(6, 1, CV_64FC1, delta_p_data);
+		cv::invert(hessian, hessian_inverse, cv::DECOMP_CHOLESKY);
+		cv::Mat delta_p = hessian_inverse * residual;
 
 		double inc[6] = { 0. };
 		memcpy(inc, delta_p.data, sizeof(double) * 6);
@@ -405,9 +405,9 @@ void AffineEstimator::computeBA()
 			cv::Mat jacobian = (cv::Mat_<double>(1, 6) << xgx.at<double>(y, x), xgy.at<double>(y, x),
 				ygx.at<double>(y, x), ygy.at<double>(y, x), gx.at<double>(y, x), gy.at<double>(y, x));
 
-			cv::Mat jacobianTmp;
-			cv::transpose(jacobian, jacobianTmp);
-			hessian_star += jacobianTmp * jacobian;
+			cv::Mat jacobian_transpose;
+			cv::transpose(jacobian, jacobian_transpose);
+			hessian_star += jacobian_transpose * jacobian;
 		}
 	}
 
@@ -608,3 +608,4 @@ void AffineEstimator::computeBC()
 		<< affine_.p1 + 1 << " " << affine_.p3 << " " << affine_.p5 << " \n"
 		<< affine_.p2 << " " << affine_.p4 + 1 << " " << affine_.p6 << std::endl;
 }
+
