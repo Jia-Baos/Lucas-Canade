@@ -285,6 +285,7 @@ void AffineEstimator::computeFC()
 		cv::Mat hessian = cv::Mat::zeros(6, 6, CV_64FC1);
 		cv::Mat residual = cv::Mat::zeros(6, 1, CV_64FC1);
 
+		// compute the value of pixel whcih has affined and store tempeorarily
 		double cost = 0.;
 		cv::Mat warped_i(tx_.size(), CV_64FC1);
 		for (int y = 0; y < tx_.rows; y++)
@@ -322,8 +323,16 @@ void AffineEstimator::computeFC()
 				double gx_warped = warped_gx.at<double>(y, x);
 				double gy_warped = warped_gy.at<double>(y, x);
 
-				cv::Mat jacobian = (cv::Mat_<double>(1, 6) << x * gx_warped, x * gy_warped,
-					y * gx_warped, y * gy_warped, gx_warped, gy_warped);
+				/*cv::Mat jacobian = (cv::Mat_<double>(1, 6) << x * gx_warped, x * gy_warped,
+					y * gx_warped, y * gy_warped, gx_warped, gy_warped);*/
+
+				// revised the expression of jacobian
+				cv::Mat jacobian_left_temp = (cv::Mat_<double>(1,2)
+					<< gx_warped * (1 + affine_.p1) + gy_warped * (affine_.p2),
+					gx_warped * (affine_.p3) + gy_warped * (1 + affine_.p4));
+				cv::Mat jacobian_right_temp = (cv::Mat_<double>(2, 6)
+					<< x, 0, y, 0, 1, 0, 0, x, 0, y, 0, 1);
+				cv::Mat jacobian = jacobian_left_temp * jacobian_right_temp;
 
 				cv::Mat jacobian_transpose;
 				cv::transpose(jacobian, jacobian_transpose);
@@ -365,7 +374,7 @@ void AffineEstimator::computeFC()
 		<< affine_.p1 + 1 << " " << affine_.p3 << " " << affine_.p5 << " \n"
 		<< affine_.p2 << " " << affine_.p4 + 1 << " " << affine_.p6 << std::endl;
 }
-
+ 
 void AffineEstimator::computeBA()
 {
 	// affine matrix
@@ -385,35 +394,7 @@ void AffineEstimator::computeBA()
 	cv::Mat gx, gy;
 	temp_proc.getGradient(gx, gy);
 
-	cv::Mat xgx(gx.size(), gx.type());
-	cv::Mat xgy(gx.size(), gx.type());
-	cv::Mat ygx(gx.size(), gx.type());
-	cv::Mat ygy(gx.size(), gx.type());
-
 	std::cout << "******************************" << std::endl;
-	cv::Mat hessian_star = cv::Mat::zeros(6, 6, CV_64FC1);
-
-	for (int y = 0; y < tx_.rows; y++)
-	{
-		for (int x = 0; x < tx_.cols; x++)
-		{
-			xgx.at<double>(y, x) = x * gx.at<double>(y, x);
-			xgy.at<double>(y, x) = x * gy.at<double>(y, x);
-			ygx.at<double>(y, x) = y * gx.at<double>(y, x);
-			ygy.at<double>(y, x) = y * gy.at<double>(y, x);
-
-			cv::Mat jacobian = (cv::Mat_<double>(1, 6) << xgx.at<double>(y, x), xgy.at<double>(y, x),
-				ygx.at<double>(y, x), ygy.at<double>(y, x), gx.at<double>(y, x), gy.at<double>(y, x));
-
-			cv::Mat jacobian_transpose;
-			cv::transpose(jacobian, jacobian_transpose);
-			hessian_star += jacobian_transpose * jacobian;
-		}
-	}
-
-	cv::Mat hessian_star_inverse = cv::Mat(6, 6, CV_64FC1);
-	cv::invert(hessian_star, hessian_star_inverse, cv::DECOMP_CHOLESKY);
-
 	int i = 0;
 	for (; i < max_iter_; ++i)
 	{
@@ -427,9 +408,9 @@ void AffineEstimator::computeBA()
 			cv::imwrite(save_path, imshow);*/
 		}
 
-		cv::Mat residual = cv::Mat::zeros(6, 1, CV_64FC1);
-
 		double cost = 0.;
+		cv::Mat hessian = cv::Mat::zeros(6, 6, CV_64FC1);
+		cv::Mat residual = cv::Mat::zeros(6, 1, CV_64FC1);
 		for (int y = 0; y < tx_.rows; y++)
 		{
 			for (int x = 0; x < tx_.cols; x++)
@@ -443,36 +424,32 @@ void AffineEstimator::computeBA()
 
 				double err = image_processor_->getBilinearInterpolation(wx, wy) - tx_.at<double>(y, x);
 
-				cv::Mat jacobian = (cv::Mat_<double>(1, 6) << xgx.at<double>(y, x), xgy.at<double>(y, x),
-					ygx.at<double>(y, x), ygy.at<double>(y, x), gx.at<double>(y, x), gy.at<double>(y, x));
+				cv::Mat x_ka = (cv::Mat_<double>(2, 2) << 1 + affine_.p1, affine_.p3, affine_.p2, 1 + affine_.p4);
+				cv::Mat x_ka_inverse;
+				cv::invert(x_ka, x_ka_inverse, cv::DECOMP_CHOLESKY);
+
+				cv::Mat jacobian_left_temp = (cv::Mat_<double>(1, 2)
+					<< gx.at<double>(y, x) * x_ka_inverse.at<double>(0, 0) + gy.at<double>(y, x) * x_ka_inverse.at<double>(1, 0),
+					gx.at<double>(y, x) * x_ka_inverse.at<double>(0, 1) + gy.at<double>(y, x) * x_ka_inverse.at<double>(1, 1));
+
+				cv::Mat jacobian_right_temp = (cv::Mat_<double>(2, 6)
+					<< x, 0, y, 0, 1, 0, 0, x, 0, y, 0, 1);
+
+				cv::Mat jacobian = jacobian_left_temp * jacobian_right_temp;
 
 				cv::Mat jacobian_transpose;
 				cv::transpose(jacobian, jacobian_transpose);
+				hessian += jacobian_transpose * jacobian;
 				residual += jacobian_transpose * err;
 				cost += err * err;
 			}
 		}
 
-		cv::Mat sigma = cv::Mat::zeros(6, 6, CV_64FC1);
+		cv::Mat hessian_inverse = cv::Mat(6, 6, CV_64FC1);
+		cv::invert(hessian, hessian_inverse, cv::DECOMP_CHOLESKY);
+		cv::Mat delta_p = hessian_inverse * residual;
 
-		sigma.at<double>(0, 0) = 1 + affine_.p1;
-		sigma.at<double>(0, 1) = affine_.p3;
-		sigma.at<double>(1, 0) = affine_.p2;
-		sigma.at<double>(1, 1) = 1 + affine_.p4;
-
-		sigma.at<double>(2, 2) = 1 + affine_.p1;
-		sigma.at<double>(2, 3) = affine_.p3;
-		sigma.at<double>(3, 2) = affine_.p2;
-		sigma.at<double>(3, 3) = 1 + affine_.p4;
-
-		sigma.at<double>(4, 4) = 1 + affine_.p1;
-		sigma.at<double>(4, 5) = affine_.p3;
-		sigma.at<double>(5, 4) = affine_.p2;
-		sigma.at<double>(5, 5) = 1 + affine_.p4;
-
-		cv::Mat delta_p = sigma * hessian_star_inverse * residual;
-
-		p += delta_p;
+		p -= delta_p;
 
 		std::cout << "Iteration " << i << " cost = " << cost <<
 			" squared delta p L2 norm = " << cv::norm(delta_p, cv::NORM_L2) << std::endl;
@@ -578,7 +555,7 @@ void AffineEstimator::computeBC()
 
 		cv::Mat warp_m = (cv::Mat_<double>(3, 3) << 1 + affine_.p1, affine_.p3, affine_.p5,
 			affine_.p2, 1 + affine_.p4, affine_.p6, 0, 0, 1);
-		cv::Mat	delta_m = (cv::Mat_<double>(3, 3) << 1 + delta_p.at<double>(0, 0), delta_p.at<double>(2, 0), delta_p.at<double>(4, 0),
+		cv::Mat	delta_m = (cv::Mat_<double>(3, 3) << 1 + delta_p.at<double>(0, 0), delta_p.at<double>(2, 0),delta_p.at<double>(4, 0),
 			delta_p.at<double>(1, 0), 1 + delta_p.at<double>(3, 0), delta_p.at<double>(5, 0), 0, 0, 1);
 
 		cv::Mat delta_m_inverse = cv::Mat(3, 3, CV_64FC1);
@@ -608,3 +585,126 @@ void AffineEstimator::computeBC()
 		<< affine_.p2 << " " << affine_.p4 + 1 << " " << affine_.p6 << std::endl;
 }
 
+//void AffineEstimator::computeBA()
+//{
+//	// affine matrix
+//	cv::Mat p = cv::Mat(6, 1, CV_64FC1, affine_.data);
+//
+//	if (debug_show_)
+//	{
+//		cv::Mat initImage = debugShow();
+//		cv::namedWindow("initImage", cv::WINDOW_NORMAL);
+//		cv::imshow("initImage", initImage);
+//	}
+//
+//	ImageProcessor temp_proc;
+//	temp_proc.setInput(tx_);
+//
+//	// Pre-compute
+//	cv::Mat gx, gy;
+//	temp_proc.getGradient(gx, gy);
+//
+//	cv::Mat xgx(gx.size(), gx.type());
+//	cv::Mat xgy(gx.size(), gx.type());
+//	cv::Mat ygx(gx.size(), gx.type());
+//	cv::Mat ygy(gx.size(), gx.type());
+//
+//	std::cout << "******************************" << std::endl;
+//	cv::Mat hessian_star = cv::Mat::zeros(6, 6, CV_64FC1);
+//
+//	for (int y = 0; y < tx_.rows; y++)
+//	{
+//		for (int x = 0; x < tx_.cols; x++)
+//		{
+//			xgx.at<double>(y, x) = x * gx.at<double>(y, x);
+//			xgy.at<double>(y, x) = x * gy.at<double>(y, x);
+//			ygx.at<double>(y, x) = y * gx.at<double>(y, x);
+//			ygy.at<double>(y, x) = y * gy.at<double>(y, x);
+//
+//			cv::Mat jacobian = (cv::Mat_<double>(1, 6) << xgx.at<double>(y, x), xgy.at<double>(y, x),
+//				ygx.at<double>(y, x), ygy.at<double>(y, x), gx.at<double>(y, x), gy.at<double>(y, x));
+//
+//			cv::Mat jacobian_transpose;
+//			cv::transpose(jacobian, jacobian_transpose);
+//			hessian_star += jacobian_transpose * jacobian;
+//		}
+//	}
+//
+//	cv::Mat hessian_star_inverse = cv::Mat(6, 6, CV_64FC1);
+//	cv::invert(hessian_star, hessian_star_inverse, cv::DECOMP_CHOLESKY);
+//
+//	int i = 0;
+//	for (; i < max_iter_; ++i)
+//	{
+//		std::string flex = ".png";
+//		if (debug_show_)
+//		{
+//			cv::Mat imshow = debugShow();
+//			cv::namedWindow("imshow", cv::WINDOW_NORMAL);
+//			cv::imshow("imshow", imshow);
+//			/*std::string save_path = std::to_string(i) + flex;
+//			cv::imwrite(save_path, imshow);*/
+//		}
+//
+//		cv::Mat residual = cv::Mat::zeros(6, 1, CV_64FC1);
+//
+//		double cost = 0.;
+//		for (int y = 0; y < tx_.rows; y++)
+//		{
+//			for (int x = 0; x < tx_.cols; x++)
+//			{
+//
+//				double wx = (double)x * (1. + affine_.p1) + (double)y * affine_.p3 + affine_.p5;
+//				double wy = (double)x * affine_.p2 + (double)y * (1. + affine_.p4) + affine_.p6;
+//
+//				if (wx < 1 || wx > image_processor_->width() - 2 || wy < 1 || wy > image_processor_->height() - 2)
+//					continue;
+//
+//				double err = image_processor_->getBilinearInterpolation(wx, wy) - tx_.at<double>(y, x);
+//
+//				cv::Mat jacobian = (cv::Mat_<double>(1, 6) << xgx.at<double>(y, x), xgy.at<double>(y, x),
+//					ygx.at<double>(y, x), ygy.at<double>(y, x), gx.at<double>(y, x), gy.at<double>(y, x));
+//
+//				cv::Mat jacobian_transpose;
+//				cv::transpose(jacobian, jacobian_transpose);
+//				residual += jacobian_transpose * err;
+//				cost += err * err;
+//			}
+//		}
+//
+//		cv::Mat sigma = cv::Mat::zeros(6, 6, CV_64FC1);
+//
+//		sigma.at<double>(0, 0) = 1 + affine_.p1;
+//		sigma.at<double>(0, 1) = affine_.p3;
+//		sigma.at<double>(1, 0) = affine_.p2;
+//		sigma.at<double>(1, 1) = 1 + affine_.p4;
+//
+//		sigma.at<double>(2, 2) = 1 + affine_.p1;
+//		sigma.at<double>(2, 3) = affine_.p3;
+//		sigma.at<double>(3, 2) = affine_.p2;
+//		sigma.at<double>(3, 3) = 1 + affine_.p4;
+//
+//		sigma.at<double>(4, 4) = 1 + affine_.p1;
+//		sigma.at<double>(4, 5) = affine_.p3;
+//		sigma.at<double>(5, 4) = affine_.p2;
+//		sigma.at<double>(5, 5) = 1 + affine_.p4;
+//
+//		cv::Mat delta_p = sigma * hessian_star_inverse * residual;
+//
+//		p += delta_p;
+//
+//		std::cout << "Iteration " << i << " cost = " << cost <<
+//			" squared delta p L2 norm = " << cv::norm(delta_p, cv::NORM_L2) << std::endl;
+//
+//		if (cv::norm(delta_p, cv::NORM_L2) < 1e-12)
+//			break;
+//
+//		std::cout << "After " << i + 1 << " iteration, the final estimate affine matrix is: \n"
+//			<< affine_.p1 + 1 << " " << affine_.p3 << " " << affine_.p5 << " \n"
+//			<< affine_.p2 << " " << affine_.p4 + 1 << " " << affine_.p6 << std::endl;
+//	}
+//
+//	std::cout << "After " << i + 1 << " iteration, the final estimate affine matrix is: \n"
+//		<< affine_.p1 + 1 << " " << affine_.p3 << " " << affine_.p5 << " \n"
+//		<< affine_.p2 << " " << affine_.p4 + 1 << " " << affine_.p6 << std::endl;
+//}
