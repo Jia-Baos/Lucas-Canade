@@ -193,8 +193,8 @@ void AffineEstimator::computeFA()
 			cv::Mat imshow = debugShow();
 			cv::namedWindow("imshow", cv::WINDOW_NORMAL);
 			cv::imshow("imshow", imshow);
-			/*std::string save_path = std::to_string(i) + flex;
-			cv::imwrite(save_path, imshow);*/
+			std::string save_path = std::to_string(i) + flex;
+			cv::imwrite(save_path, imshow);
 		}
 
 		cv::Mat hessian = cv::Mat::zeros(6, 6, CV_64FC1);
@@ -277,8 +277,8 @@ void AffineEstimator::computeFC()
 			cv::Mat imshow = debugShow();
 			cv::namedWindow("imshow", cv::WINDOW_NORMAL);
 			cv::imshow("imshow", imshow);
-			/*std::string save_path = std::to_string(i) + flex;
-			cv::imwrite(save_path, imshow);*/
+			std::string save_path = std::to_string(i) + flex;
+			cv::imwrite(save_path, imshow);
 		}
 
 		std::cout << "******************************" << std::endl;
@@ -404,8 +404,8 @@ void AffineEstimator::computeBA()
 			cv::Mat imshow = debugShow();
 			cv::namedWindow("imshow", cv::WINDOW_NORMAL);
 			cv::imshow("imshow", imshow);
-			/*std::string save_path = std::to_string(i) + flex;
-			cv::imwrite(save_path, imshow);*/
+			std::string save_path = std::to_string(i) + flex;
+			cv::imwrite(save_path, imshow);
 		}
 
 		double cost = 0.;
@@ -521,8 +521,8 @@ void AffineEstimator::computeBC()
 			cv::Mat imshow = debugShow();
 			cv::namedWindow("imshow", cv::WINDOW_NORMAL);
 			cv::imshow("imshow", imshow);
-			/*std::string save_path = std::to_string(i) + flex;
-			cv::imwrite(save_path, imshow);*/
+			std::string save_path = std::to_string(i) + flex;
+			cv::imwrite(save_path, imshow);
 		}
 
 		cv::Mat residual = cv::Mat::zeros(6, 1, CV_64FC1);

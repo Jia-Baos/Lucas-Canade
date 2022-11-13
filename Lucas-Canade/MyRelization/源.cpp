@@ -32,7 +32,7 @@ int main(int argc, char** argv)
     affine_param.p5 = 20;
     affine_param.p6 = 30;
 
-    /*affine_param.p1 = 0.1;
+   /* affine_param.p1 = 0.1;
     affine_param.p2 = 0;
     affine_param.p3 = 0;
     affine_param.p4 = 0;
@@ -40,9 +40,13 @@ int main(int argc, char** argv)
     affine_param.p6 = 50;*/
 
     AffineEstimator estimator;
-    estimator.compute(image, template_image, affine_param, Method::kBackwardAdditive);
+    estimator.compute(image, template_image, affine_param, Method::kForwardAdditive);
 
-    /*double array[6] = { 1,2,3,4,5,6 };
+    cv::waitKey();
+    return 0;
+}
+
+/*double array[6] = { 1,2,3,4,5,6 };
     double* pointer = array;
 
     cv::Mat test = cv::Mat(6, 1, CV_64FC1, pointer);
@@ -61,9 +65,3 @@ int main(int argc, char** argv)
     {
         std::cout << array[i] << std::endl;
     }*/
-
-
-
-    cv::waitKey();
-    return 0;
-}
